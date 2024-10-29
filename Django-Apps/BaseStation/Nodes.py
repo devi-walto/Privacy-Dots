@@ -1,13 +1,16 @@
 #implementation of the nodes class for the Privacy Dots
 import base_station
+import time
 #can be used to connect to the Base Station from each node.
 
 class PrivacyDotNode:
-    def __init__(self, node_id):
+    def __init__(self, node_id, base_station):
         """
         Initializes the PrivacyDotNode with a given node ID.
         """
         self.node_id = node_id
+        self.base_station = base_station
+        self.motion_detected = False
         self.connected = False
         self.wifi_mode = None
         self.ssid = None
@@ -18,7 +21,7 @@ class PrivacyDotNode:
         Initializes connection settings for BLE communication with the BaseStation.
         """
         print("Initializing connection settings for BLE communication...")
-        # Initialization logic here
+        # Initialization/connection logic here
         self.connected = True
 
     def connect_to_base_station(self):
@@ -27,10 +30,18 @@ class PrivacyDotNode:
         """
         if self.connected:
             print("Connecting to BaseStation...")
-            # Connection logic here
+            self.base_station.connect_node(self.node_id)
             print(f"Connected to BaseStation with node ID {self.node_id}.")
         else:
             print("Connection initialization required before connecting to BaseStation.")
+
+    def detect_motion(self):
+        """
+        Simulates detecting motion and sends data to the BaseStation if motion is detected.
+        """
+        self.motion_detected = True
+        print(f"Node {self.node_id} detected motion!")
+        self.send_data({"node_id": self.node_id, "motion": self.motion_detected, "Detection_time": self.time})
 
     def send_data(self, data):
         """
@@ -38,7 +49,7 @@ class PrivacyDotNode:
         """
         if self.connected:
             print(f"Sending data to BaseStation: {data}")
-            # Data transmission logic here
+            self.base_station.recieve_ble_data(data)
         else:
             print("Cannot send data, not connected to BaseStation.")
 
@@ -86,3 +97,4 @@ class PrivacyDotNode:
         ble_status = "Operational"  # Example status
         wifi_status = "Operational" if self.wifi_mode else "Not Configured"
         print(f"BLE Status: {ble_status}, Wi-Fi Status: {wifi_status}")
+
