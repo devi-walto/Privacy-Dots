@@ -1,13 +1,52 @@
+import subprocess
+import os
 class BaseStation:
     
     # Server Configuration functions
     def __init__(self): # Constructor
         self.node_list = []
+        
+        # Wifi Configuration
         self.ssid = None
         self.password = None
         
+        # Server status
+        self.server_initialized = False
+        self.server_running = False
+        self.webapp_launched = False
+        self.network_mode = False
+        self.access_point_mode = False
+        
+        
+        
+    def install_dependencies(self):
+        """ Installs the necessary dependencies for the BaseStation to run. """
+        try:
+            # Check if the dependencies.txt file exists
+            if not os.path.exists("dependencies.txt") or os.path.exists("requirements.txt"):
+                print(" dependencies.txt file not found. Creating one...")
+                subprocess.run(["pip", "freeze", ">", "dependencies.txt"], shell=True) # Creates a dependencies.txt file
+                
+            if os.path.exists("dependencies.txt"):
+                print("Installing dependencies...")
+                subprocess.run(["pip", "install", "-r", "dependencies.txt"], shell=True)
+                
+            elif os.path.exists("requirements.txt"):
+                print("Installing dependencies...")
+                subprocess.run(["pip", "install", "-r", "requirements.txt"], shell=True)
+            print("Dependencies installed successfully.")
+        except Exception as e:
+            print(f"Error installing dependencies: {e}") 
+        
     def initialize_server(self): # Function to initialize the server
         """ Sets up the server on the RPi to manage local communication between the host and the webapp. """
+         try:
+             # Step 1: Install dependencies 
+            print("Initializing server...")
+            self.install_dependencies()
+            # Add server initialization code here
+            self.server_initialized = True
+            print("Server initialized successfully.")
     
     def launch_webapp(self): # Function to launch the webapp
         """ Launches the webapp in the background on boot. Served locally on the server; accessible via HTTP."""
