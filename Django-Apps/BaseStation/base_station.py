@@ -40,28 +40,113 @@ class BaseStation:
         
     def initialize_server(self): # Function to initialize the server
         """ Sets up the server on the RPi to manage local communication between the host and the webapp. """
-         try:
+        try:
              # Step 1: Install dependencies 
             print("Initializing server...")
             self.install_dependencies()
             # Add server initialization code here
             self.server_initialized = True
             print("Server initialized successfully.")
+            
+            # Step Set up sytemd service to run the server on boot
+            service_file = 'etc/systemd/system/base_station.service'
+            if not os.path.exists(service_file):
+                with open(service_file, 'w') as f:
+                    f.write(f"""[Unit]
+                                Description=BaseStation Service
+                                After=multi-user.target
+                                
+                                [Service]
+                                ExecStart=/usr/bin/python3 /path/to/base_station.py runserver
+                                WorkingDirectory= Django-Apps\BaseStation\base_station.py
+                                Restart=always
+                                
+                                [Install]
+                                WantedBy=multi-user.target""")
+                    
+                # Enable the service
+                subprocess.run(["sudo", "systemctl", "enable", "base_station.service"], check = True)
+                
+            # Step 3: Start the server (if not already running)
+            subprocess.run(["sudo", "systemctl", "start", "base_station.service"], check = True)
+            
+            # Mark the server as initialized / running
+            self.server_initialized = True
+            self.server_running = True
+            print("Server initialized and running on boot.")
+            
+        except Exception as e:
+            print(f"Error initializing server: {e}")
+            self.server_initialized = False
+            self.server_running = False
+            
+            
     
     def launch_webapp(self): # Function to launch the webapp
         """ Launches the webapp in the background on boot. Served locally on the server; accessible via HTTP."""
-        
+        try:
+            web_app_path = "path/to/your/webapp" ####### @Diego: Please update this path to the actual path of the webapp
+            entry_file = "server.js" ####### @Diego: Please update this to the actual entry file of the webapp
+            
+            os.chdir(web_app_path) # This line is optional, but it ensures that the webapp is launched from the correct directory
+            
+            # Start the webapp in the background
+            self.webapp_process = subprocess.Popen(
+                ["node", entry_file], # Command to start the webapp 
+                stdout=subprocess.PIPE, # Redirects standard output to a pipe
+                stderr=subprocess.PIPE  # Redirect standard error to a pipe
+            )
+            
+            print("Webapp launched successfully.")
+            
+        except FileNotFoundError:
+            print("Error Node.js or entry file not found. Please check the path to ensure Node.js is installed.")
+            
+        except Exception as e:
+            print(f"Error launching webapp: {e}")
+            
+    def stop_webapp(self): # Function to stop the webapp
+        """ Stops the webapp process if it is running."""
+        if self.webapp_process and self.webapp_process.poll() is None:
+            self.webapp_process.terminate()
+            self.webapp_process.wait()
+            print("Webapp stopped successfully.")
+            
+        else:
+            print("Webapp not running.")
+            
     # Wifi functions   
     def enter_network_mode(self): # Function to enter wifi mode
         """ Puts the server in wifi mode, allowing webapp to run on a local network."""
+        if not self.ssid or not self.password:
+            print("WiFi credentials not set. Use connect_to_wifi(ssid, password) to get credentials. ")
+            return
         
+        try:
+            # Command to connect to specified wifi network
+            connect_command = f"nmcli device wifi connect '{self.ssid}' password '{self.password}'"
+            
+            # Run the command and check for errors
+            process = subprocess.run(connect_command, shell=True, capture_output=True)
+            
+            if process.returncode == 0:
+                print( f" Connected to {self.ssid} successfully.")
+            
+            else:
+                print(f"Failed to connect to {self.ssid}. Error: {process.stderr}")
+                
+        except Exception as e:
+            print(f"Error encountered entering network mode: {e}")
+            
     def enter_access_point_mode(self): # Function to enter access point mode
         """ Puts the server in access point mode, allowing the webapp to run on Rpi's Hotspot."""
-    
+        try:
+            # Step 1: Confiure the accesspoint
     def connect_to_wifi(self, ssid, password): # Function to connect to wifi
         """ Connects the server to a wifi network."""
         self.ssid = ssid
         self.password = password
+        print(f" Wfi credentials set. SSID: {self.ssid}, Password: {self.password}")
     
     def disconnect_from_wifi(self): # Function to disconnect from wifi
         """ Disconnects the server from a wifi network."""
