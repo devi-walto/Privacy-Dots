@@ -1,10 +1,12 @@
 import subprocess
 import os
+import bluetooth
+import re
 class BaseStation:
     
     # Server Configuration functions
     def __init__(self): # Constructor
-        self.node_list = []
+        self.connected_nodes = {} # Dictionary to store connected nodes
         
         # Wifi Configuration
         self.ssid = None
@@ -217,10 +219,63 @@ class BaseStation:
     # Node functions
     def connect_node(self,node_id): # Function to connect to a new node
         """ Connects to a new node using BLE. Uses the node_id to identify the node."""
+        print("BaseStation is scanning for nodes...")
+        
+        try:
+            # Step 1: Start listening for nearby devices
+            nearby_devices = bluetooth.discover_devices(duration = 8, lookup_names = True)
+            
+            # Step 2: Loop through devices to identify PrivacyDotNode devices
+            for addr, name in nearby_devices:
+                if "PrivacyDotNode" in name: # Assuming the node name contains "PrivacyDotNode"
+                    print(f"Found node: {name} with address: {addr}")
+                    print("Attempting to connect...")
+                    
+                    # Step 3: Iniitialize a connection with the PrivacyDotNode
+                    node_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                    node_socket.connect((addr, 1)) # Assuming the node is using RFCOMM channel 1
+                    
+                    # Step 4: AUTHENTICATE NODE
+                    node_socket.send("REQUEST_NODE_ID") # Request the node to send its ID
+                    node_id = node_socket.recv(1024).decode("utf-8") # Receive the node ID
+                    
+                    
+                    if self.authenticate_node(node_id): # Check if the node is valid
+                        print(f"Node {node_id} connected successfully.")
+                        self.connected_nodes[node_id] = node_socket
+                        self.connected = True
+                        node_socket.send("CONNECTED") # Notify the node that it is connected
+                    else:
+                        print(f"Node {node_id} rejected.")
+                        node_socket.send("AUTH_FAILED") # Notify the node that it is rejected
+                        node_socket.close()
+                        
+        except bluetooth.BluetoothError as e:
+            print(f"Error connecting to node: {e}")
+            self.connected = False
+            
+            
+      ########### Experimental code ###########              
+    def authenticate_node(self, node_id): # Function to authenticate a node
+        """ Authenticates the node with the given node_id. Ensurs that the format is 'PDN#123456'"""
+        # Regular expression to match the 'PDN#' followed by 6 digits format (e.g. 'PDN#123456')
+        pattern = re.compile(r"PDN#\d{6}")
+        
+        # Check if the node_id matches the pattern
+        return re.match(pattern, node_id) is not None
+               
+        
+    
     
     def disconnect_node(self,node_id): # Function to disconnect from a node
         """ Disconnects from the node with the given node_id."""
-    
+        if node_id in self.connected_nodes:
+            self.connected_nodes[node_id].close()
+            del self.connected_nodes[node_id]
+            print(f"Node {node_id} disconnected successfully.")
+        else:
+            print(f"No node with ID {node_id} connected.")
+            
     def recieve_ble_data(self): # Function to recieve data from a connected node
         """Listens for incoming data (e.g. sensor data) from a connected node."""
     
