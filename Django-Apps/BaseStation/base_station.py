@@ -140,8 +140,64 @@ class BaseStation:
             
     def enter_access_point_mode(self): # Function to enter access point mode
         """ Puts the server in access point mode, allowing the webapp to run on Rpi's Hotspot."""
+        self.ssid = "Rpi-Hot"
+        self.password = "password"
         try:
-            # Step 1: Confiure the accesspoint
+            # Step 1: Confiure hostapd (AP settings)
+            with open("/etc/hostapd/hostapd.conf", "w") as f:
+                f.write(f"""
+                interface=wlan0
+                driver=nl80211
+                ssid={self.ssid}
+                hw_mode=g
+                channel=7
+                wmm_enabled=0
+                macaddr_acl=0
+                auth_algs=1
+                ignore_broadcast_ssid=0
+                wpa=2
+                wpa_passphrase={self.password}
+                wpa_key_mgmt=WPA-PSK
+                wpa_pairwise=TKIP
+                rsn_pairwise=CCMP
+                """)
+                
+            # Step 2: Configure DHCP server (dnsmasq)
+            with open("/etc/dnsmasq.conf", "w") as f:
+                f.write(f"""
+                interface=wlan0
+                dhcp-range= 192.168.4.20, 255.255.255.0,24h
+                """)
+                
+            # Step 3: Set up static IP for wlan0
+            subprocess.run("sudo ifconfig wlan0 192.168.4.1 netmask 255.255.255.0", shell=True)
+            
+            # Step 4: Enable hostapd and dnsmasq services
+            subprocess.run("sudo systemctl start hostapd", shell=True)
+            subprocess.run("sudo systemctl start dnsmasq", shell=True)
+            
+            print(f"Access Point mode enabled. SSID: {self.ssid} Password: {self.password}")
+            
+        except Exception as e:
+            print(f"Error enabling access point mode: {e}")
+     
+    ########## NOT SURE IF THIS FUNCTION IS NEEDED / WORKS ##########       
+    def exit_access_point_mode(self): # Function to exit access point mode
+        """ Exits access point mode and reverts to client mode."""
+        try:
+            # Step 1: Stop hostapd and dnsmasq services
+            subprocess.run("sudo systemctl stop hostapd", shell=True)
+            subprocess.run("sudo systemctl stop dnsmasq", shell=True)
+            
+            # Step 2: Restart the wlan0 interface
+            subprocess.run("sudo ifconfig wlan0 down", shell=True)
+            subprocess.run("sudo ifconfig wlan0 up", shell=True)
+            
+            print("Access Point mode disabled.")
+            
+        except Exception as e:
+            print(f"Error disabling access point mode: {e}")
+            
     def connect_to_wifi(self, ssid, password): # Function to connect to wifi
         """ Connects the server to a wifi network."""
         self.ssid = ssid
