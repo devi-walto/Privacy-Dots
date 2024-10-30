@@ -274,16 +274,18 @@ class BaseStation:
             del self.connected_nodes[node_id]
             print(f"Node {node_id} disconnected successfully.")
         else:
-            print(f"No node with ID {node_id} connected.")
-            
+            print(f"No node with ID {node_id} currently connected.")
+
+    def auto_connect(self): # Function to auto connect to a previously connected node
+        """ Automatically connects to a previously connected node."""
+             
     def recieve_ble_data(self): # Function to recieve data from a connected node
         """Listens for incoming data (e.g. sensor data) from a connected node."""
     
     def send_ble_data(self): # Function to send data to a connected node
         """ Sends data to a connected node (e.g. commands for the node)."""
     
-    def auto_connect(self): # Function to auto connect to a previously connected node
-        """ Automatically connects to a previously connected node."""
+
     
     
     # WebApp functions
