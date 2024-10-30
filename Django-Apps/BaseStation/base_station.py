@@ -1,6 +1,6 @@
 import subprocess
 import os
-import bluetooth
+import bluetooth # Import pybluez library for Bluetooth communication
 import re
 class BaseStation:
     
