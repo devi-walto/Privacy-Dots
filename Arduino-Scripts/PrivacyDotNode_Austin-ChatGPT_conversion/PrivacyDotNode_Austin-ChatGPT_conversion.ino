@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <WiFi.h>          // Include Wi-Fi library for ESP32
-#include <BluetoothSerial.h> // Include Bluetooth library for ESP32
+#include <WiFi.h>              // Wi-Fi library for ESP32
+#include <BluetoothSerial.h>    // Bluetooth library for ESP32
 
 class PrivacyDotNode {
 private:
@@ -10,10 +10,9 @@ private:
     String wifi_mode;
     String ssid;
     String password;
-    
 
-    // BluetoothSerial object for Bluetooth communication
-    BluetoothSerial SerialBT;
+    BluetoothSerial SerialBT;    // BluetoothSerial object for Bluetooth communication
+    WiFiClient wifi_client;      // Wi-Fi client for sending data over Wi-Fi
 
 public:
     // Constructor
@@ -30,9 +29,11 @@ public:
     void connect_to_base_station(const String& ip, int port) {
         if (connected) {
             Serial.println("Connecting to BaseStation at " + ip + ":" + String(port) + "...");
-            // Add your socket connection logic here
-            // Example: Create a WiFiClient and connect to the server
-            Serial.println("Connected to BaseStation.");
+            if (wifi_client.connect(ip.c_str(), port)) {
+                Serial.println("Connected to BaseStation over Wi-Fi.");
+            } else {
+                Serial.println("Failed to connect to BaseStation.");
+            }
         } else {
             Serial.println("Connection initialization required before connecting to BaseStation.");
         }
@@ -48,10 +49,13 @@ public:
     void send_data(const String& data) {
         if (connected) {
             Serial.println("Sending data: " + data);
-            // Implement Bluetooth or Wi-Fi data sending logic here
-            // Example: SerialBT.println(data); // For Bluetooth
-            // WiFiClient client; // For Wi-Fi
-            // client.println(data); // Send data over Wi-Fi
+            if (wifi_mode == "Client" && wifi_client.connected()) {
+                wifi_client.println(data);  // Send data over Wi-Fi
+            } else if (SerialBT.hasClient()) {
+                SerialBT.println(data);  // Send data over Bluetooth
+            } else {
+                Serial.println("No active connection for data transmission.");
+            }
         } else {
             Serial.println("Cannot send data, not connected.");
         }
@@ -78,7 +82,7 @@ public:
     void setup_access_point() {
         Serial.println("Setting up Wi-Fi Access Point mode...");
         WiFi.softAP(ssid.c_str(), password.c_str());
-        Serial.println("Access Point created.");
+        Serial.println("Access Point created with SSID: " + ssid);
     }
 
     void connect_to_wifi(const String& ssid, const String& password) {
@@ -89,32 +93,31 @@ public:
             delay(500);
             Serial.print(".");
         }
-        Serial.println("Connected to Wi-Fi!");
+        Serial.println("\nConnected to Wi-Fi!");
     }
 
     void self_check() {
         Serial.println("Running self-check diagnostics...");
         String ble_status = "Operational"; // Example status
-        String wifi_status = (wifi_mode.length() > 0) ? "Operational" : "Not Configured";
+        String wifi_status = (WiFi.status() == WL_CONNECTED) ? "Connected" : "Not Connected";
         Serial.println("BLE Status: " + ble_status + ", Wi-Fi Status: " + wifi_status);
     }
 };
 
+// Declare the node globally to retain state
+PrivacyDotNode node("Node1");
+
 void setup() {
     Serial.begin(9600);
-    PrivacyDotNode node("Node1");
-
     node.initialize_connection();
     node.wifi_setup("Client", "MySSID", "MyPassword");
     node.self_check();
 }
 
 void loop() {
-    // Simulate motion detection
     static unsigned long last_check = 0;
     if (millis() - last_check > 5000) {  // Check every 5 seconds
         last_check = millis();
-        PrivacyDotNode node("Node1");  // Recreate node to simulate ongoing operation
         node.detect_motion();
     }
 }
