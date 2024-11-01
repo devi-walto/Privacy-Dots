@@ -1,6 +1,9 @@
 #include <Arduino.h>
-#include <WiFi.h>              // Wi-Fi library for ESP32
-#include <BluetoothSerial.h>    // Bluetooth library for ESP32
+#include <WiFi.h>
+#include <BLEDevice.h>
+#include <nlohmann/json.hpp>  // Include the nlohmann JSON library
+
+using json = nlohmann::json;
 
 class PrivacyDotNode {
 private:
@@ -11,8 +14,9 @@ private:
     String ssid;
     String password;
 
-    BluetoothSerial SerialBT;    // BluetoothSerial object for Bluetooth communication
-    WiFiClient wifi_client;      // Wi-Fi client for sending data over Wi-Fi
+    WiFiClient wifi_client;
+    BLEServer *pServer = NULL;
+    BLECharacteristic *pCharacteristic = NULL;
 
 public:
     // Constructor
@@ -21,9 +25,17 @@ public:
 
     void initialize_connection() {
         Serial.println("Initializing connection settings for Bluetooth communication...");
-        SerialBT.begin(node_id);  // Start Bluetooth with node ID
+        BLEDevice::init(node_id.c_str());
+        pServer = BLEDevice::createServer();
+        pCharacteristic = pServer->createCharacteristic(
+          BLEUUID((uint16_t)0x2A19), 
+            BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE
+        );
+
+        pCharacteristic->setValue("Initialized");
+        pServer->start();
         connected = true;
-        Serial.println("Bluetooth initialized.");
+        Serial.println("BLE initialized.");
     }
 
     void connect_to_base_station(const String& ip, int port) {
@@ -42,17 +54,26 @@ public:
     void detect_motion() {
         motion_detected = true;
         Serial.println("Node " + node_id + " detected motion!");
-        String data = "node_id: " + node_id + ", motion: " + String(motion_detected) + ", Detection_time: " + String(millis());
-        send_data(data);
+        send_data();
     }
 
-    void send_data(const String& data) {
+    void send_data() {
         if (connected) {
-            Serial.println("Sending data: " + data);
+            // Create a JSON object
+            json data = {
+                {"node_id", node_id.c_str()},
+                {"motion_detected", motion_detected},
+                {"Detection_time", millis()}
+            };
+
+            String json_data = String(data.dump().c_str());  // Convert JSON to string
+            Serial.println("Sending data: " + json_data);
+            
             if (wifi_mode == "Client" && wifi_client.connected()) {
-                wifi_client.println(data);  // Send data over Wi-Fi
-            } else if (SerialBT.hasClient()) {
-                SerialBT.println(data);  // Send data over Bluetooth
+                wifi_client.println(json_data);  // Send data over Wi-Fi
+            } else if (pServer->getConnectedCount() > 0) {
+                pCharacteristic->setValue(json_data.c_str());  // Update BLE characteristic
+                pCharacteristic->notify();  // Send data over BLE
             } else {
                 Serial.println("No active connection for data transmission.");
             }
@@ -63,7 +84,15 @@ public:
 
     void receive_command(const String& command) {
         Serial.println("Received command: " + command);
-        // Implement command handling logic here
+        // Parse the JSON command
+        auto json_command = json::parse(command.c_str());
+
+        std::string method = json_command["method"];
+        // Here you can implement specific command handling based on the method received
+        if (method == "trigger_motion_detection") {
+            detect_motion();  // Call detect_motion if the method matches
+        }
+        // Handle other commands as needed
     }
 
     void wifi_setup(const String& mode, const String& ssid, const String& password) {
@@ -71,7 +100,7 @@ public:
         this->ssid = ssid;
         this->password = password;
         Serial.println("Wi-Fi setup in " + mode + " mode with SSID '" + ssid + "'.");
-        
+
         if (mode == "Client") {
             connect_to_wifi(ssid, password);
         } else if (mode == "Access Point") {
@@ -98,7 +127,7 @@ public:
 
     void self_check() {
         Serial.println("Running self-check diagnostics...");
-        String ble_status = "Operational"; // Example status
+        String ble_status = "Operational";  // Example status
         String wifi_status = (WiFi.status() == WL_CONNECTED) ? "Connected" : "Not Connected";
         Serial.println("BLE Status: " + ble_status + ", Wi-Fi Status: " + wifi_status);
     }
@@ -120,4 +149,6 @@ void loop() {
         last_check = millis();
         node.detect_motion();
     }
+
+    // Here you would implement code to listen for incoming commands and pass them to receive_command
 }
