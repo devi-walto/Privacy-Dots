@@ -1,7 +1,9 @@
+import json
 import subprocess
 import os
 import bluetooth # Import pybluez library for Bluetooth communication
 import re
+
 class BaseStation:
     
     # Server Configuration functions
@@ -18,8 +20,62 @@ class BaseStation:
         self.webapp_launched = False
         self.network_mode = False
         self.access_point_mode = False
-        
-        
+
+# Added JSON serialization functions 
+    # @Diego @Carson @Devin: This is a suggestion to add JSON data processing functions to the BaseStation class   
+    def process_data(json_data): # Function to process command
+        """ Processes a command received from the webapp and/or DotNode. 
+        e.g. start/stop tasks, change configurations, etc.
+        """
+ 
+    def to_dict(self):
+        """ Converts the instance attributes to a dictionary for JSON serialization. """
+        return {
+            'connected_nodes': self.connected_nodes,
+            'ssid': self.ssid,
+            'password': self.password,
+            'server_initialized': self.server_initialized,
+            'server_running': self.server_running,
+            'webapp_launched': self.webapp_launched,
+            'network_mode': self.network_mode,
+            'access_point_mode': self.access_point_mode,
+        }
+    
+    def from_dict(self, data):
+        """ Loads the instance attributes from a dictionary. """
+        self.connected_nodes = data.get('connected_nodes', {})
+        self.ssid = data.get('ssid')
+        self.password = data.get('password')
+        self.server_initialized = data.get('server_initialized', False)
+        self.server_running = data.get('server_running', False)
+        self.webapp_launched = data.get('webapp_launched', False)
+        self.network_mode = data.get('network_mode', False)
+        self.access_point_mode = data.get('access_point_mode', False)
+
+    def save_to_json(self, filename='basestation_state.json'):
+        """ Saves the current state of the BaseStation to a JSON file. """
+        try:
+            with open(filename, 'w') as f:
+                json.dump(self.to_dict(), f, indent=4)
+            print(f"State saved to {filename}.")
+        except Exception as e:
+            print(f"Error saving state to JSON: {e}")
+
+    def load_from_json(self, filename='basestation_state.json'):
+        """ Loads the state of the BaseStation from a JSON file. """
+        try:
+            with open(filename, 'r') as f:
+                data = json.load(f)
+                self.from_dict(data)
+            print(f"State loaded from {filename}.")
+        except FileNotFoundError:
+            print(f"Error: {filename} not found.")
+        except json.JSONDecodeError:
+            print(f"Error: Failed to decode JSON from {filename}.")
+        except Exception as e:
+            print(f"Error loading state from JSON: {e}")     
+            
+#############################################################################################################            
         
     def install_dependencies(self):
         """ Installs the necessary dependencies for the BaseStation to run. """
@@ -276,8 +332,8 @@ class BaseStation:
         else:
             print(f"No node with ID {node_id} currently connected.")
 
-    def auto_connect(self): # Function to auto connect to a previously connected node
-        """ Automatically connects to a previously connected node."""
+    def auto_reconnect(self): # Function to auto connect to a previously connected node
+        """ Automatically reconnects to a previously connected node."""
              
     def recieve_ble_data(self): # Function to recieve data from a connected node
         """Listens for incoming data (e.g. sensor data) from a connected node."""
