@@ -5,6 +5,6 @@ For more information on the mobile app, visit the [Privacy Dots App Repository](
  Here's the list of contributors and their roles:
 
 - **[Devin Walton]**: 
-- **[Diego Arreola]**: WebApp Development, Expo Integration, and Push Notification Setup for real-time alerts in the [Privacy Dots App](https://github.com/your-username/privacy-dots-app).
+- **[Diego Arreola]**: WebApp Development, Expo Integration, and Push Notification Setup in the [Privacy Dots App](https://github.com/your-username/privacy-dots-app).
 - **[Carson Allen]**:
 - **[Austin Lucas]**: 
