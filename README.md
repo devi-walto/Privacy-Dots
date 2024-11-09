@@ -7,4 +7,4 @@ For more information on the mobile app, visit the [Privacy Dots App Repository](
 - **[Devin Walton]**: 
 - **[Diego Arreola]**: WebApp Development, Expo Integration, and Push Notification Setup in the [Privacy Dots App](https://github.com/your-username/privacy-dots-app).
 - **[Carson Allen]**:
-- **[Austin Lucas]**: 
+- **[Austin Lucas]**: Purchased Hardware Components, Designed Presentation Material (Google Slides), Python Node Class Implementation, Assisted Devin with 3D Model Improvement
