@@ -4,7 +4,7 @@ For more information on the mobile app, visit the [Privacy Dots App Repository](
 
  Here's the list of contributors and their roles:
 
-- **[Devin Walton]**: 
+- **[Devin Walton]**: 3D Printed Hardware components; Designed hardware components to fit circuitry; Completed BaseStation Django-App which includes Wi-Fi, AP, and BT functionality; Developed experimental API for BT communication between Arduino ESP32 (DotNode) & Rpi (BaseStation).
 - **[Diego Arreola]**: WebApp Development, Expo Integration, and Push Notification Setup in the [Privacy Dots App](https://github.com/your-username/privacy-dots-app).
-- **[Carson Allen]**:
-- **[Austin Lucas]**: Purchased Hardware Components, Designed Presentation Material (Google Slides), Python Node Class Implementation, Assisted Devin with 3D Model Improvement
+- **[Carson Allen]**: Assisted in WebApp Development, Expo integration, HTTP PUSH & POST requests, Created Django Server & Implemented it with WebApp.
+- **[Austin Lucas]**: Purchased Hardware Components, Designed Presentation Material (Google Slides), Python Node Class Implementation, Assisted Devin with 3D Model Improvement.
